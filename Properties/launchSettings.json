@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Telemetry": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}
