@@ -2,6 +2,8 @@
 
 ### What is it?
 
+Note: This mod is for TLD 2.5+ / Unity 6.0+. It is not compatible with older versions of the game.
+
 This project is a MelonLoader-based mod for [The Long Dark](https://www.thelongdark.com).
 A video game developed by [Hinterland Games](https://hinterlandgames.com/).
 
