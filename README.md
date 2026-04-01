@@ -15,7 +15,7 @@ frustration for players who are trying to find these caches.
 Provides access to prepper cache information for the current game.
 
 The data is written to a text file (PrepperCache.log) located in the game's Mods folder.
-The log file is updated when the player presses the configured hotkey (default: Numeric Keypad 1).
+The log file is updated when the player presses the configured hotkey (default: Numeric Keypad 4).
 The data is written as a single row of "|" separated values, with the following columns:
    - **irlDateTime**: Real-world date and time when the data was recorded (MM/DD/YYYY HH:MM:SS)
    - **gameTime**: In-game hours played (float)

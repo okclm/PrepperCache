@@ -21,11 +21,11 @@ namespace PrepperCache
 
         [Name("Capture Prepper Cache Key")]
         [Description("Which key you press to manually capture Prepper Cache data")]
-        public KeyCode captureKey = KeyCode.Keypad1;
+        public KeyCode captureKey = KeyCode.Keypad4;
 
         [Name("Enable HUD display messages")]
         [Description("Enable/Disable Prepper Cache informational messages on HUD display")]
-        public bool enablePrepperCacheHUDDisplay = true;
+        public bool enablePrepperCacheHUDDisplay = false;
 
         [Name("HUD Prepper Cache Inventory display duration")]
         [Description("Seconds to display the HUD Prepper Cache Inventory message")]

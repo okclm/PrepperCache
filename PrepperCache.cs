@@ -47,7 +47,7 @@ namespace PrepperCache
         // Are we in the game menu?
         public static bool inMenu = true;
 
-        public const string MOD_VERSION_NUMBER = "Version 1.2.0 - 03/17/2026";      // The version # of the mod.
+        public const string MOD_VERSION_NUMBER = "Version 1.2.0 - 03/31/2026";      // The version # of the mod.
         internal const string DEFAULT_FILE_NAME = "PrepperCache.log";               // The log file is written in the MODS folder for TLD  (i.e. D:\Program Files (x86)\Steam\steamapps\common\TheLongDark\Mods)
         //internal const string DEFAULT_FILE_NAME = "Telemetry.log";                // The log file is written in the MODS folder for TLD  (i.e. D:\Program Files (x86)\Steam\steamapps\common\TheLongDark\Mods)
 
@@ -139,16 +139,20 @@ namespace PrepperCache
         {
             // *** This if DEBUG statement will enable all LogMessage text going to the MelonLogger logger.
             // *** Otherwise, we just log to the Telemetry log file.
-            #if DEBUG
+#if DEBUG
                 // Use static MelonLogger so this method can be called from static contexts (Harmony hooks, etc.)
                 MelonLogger.Msg("." + caller + "." + lineNumber + ": " + message);
-            #else
-                // In release, write lightweight telemetry to file so logs are still available without requiring Melon instance.
-                try
+#else
+            // In release, only write the message if there are warning / error keywords in the message.  This allows us to capture important messages in the log file without overwhelming it with debug messages.
+            try
+            {
+                //LogData(";" + caller + "." + lineNumber + ": " + message);
+                if (message.Contains("error", StringComparison.OrdinalIgnoreCase) || message.Contains("warn", StringComparison.OrdinalIgnoreCase))
                 {
-                    LogData(";" + caller + "." + lineNumber + ": " + message);
+                    MelonLogger.Msg("." + caller + "." + lineNumber + ": " + message);
                 }
-                catch
+            }
+            catch
                 {
                     // swallow — don't let logging break the game
                 }
@@ -233,33 +237,41 @@ namespace PrepperCache
                         if (!emt.HasValue)
                             return;
 
-                        //var stalker = ExperienceModeManager.GetGameModeFromName("Stalker").Cast<SandboxConfig>();
-                        //var interloper = ExperienceModeManager.GetGameModeFromName("Interloper").Cast<SandboxConfig>();
-
-                        //var experienceManager = GameManager.GetExperienceModeManagerComponent();
                         ExperienceModeManager experienceManager = GameManager.GetExperienceModeManagerComponent();
 
-                        //var availableModes = experienceManager?.GetAvailableGameModes();
-                        //List<GameModeConfig> availableModes = (List<GameModeConfig>)(experienceManager?.GetAvailableGameModes());
-                        //var availableModes = experienceManager?.GetAvailableGameModes();
-                        //IList<GameModeConfig>? availableModes = (IList<GameModeConfig>?)(experienceManager?.GetAvailableGameModes());
-                        //IList<GameModeConfig>? availableModes = (IList<GameModeConfig>?)(experienceManager?.GetAvailableGameModes());
-                        IList<GameModeConfig>? availableModes = (experienceManager?.GetAvailableGameModes()) as IList<GameModeConfig>;
+                        // Monsieurmeh's fix for TLD 2.5+ / Unity 6 update issues.
+                        Il2CppSystem.Collections.Generic.IList<GameModeConfig>? uncastConfigs = experienceManager?.GetAvailableGameModes();
+                        if (uncastConfigs == null)
+                        {
+                            LogMessage($"ERROR: Failed to get available game modes from ExperienceModeManager.");
+                            return;
+                        }
+
+                        Il2CppSystem.Collections.Generic.List<GameModeConfig>? configs = null;
+                        configs = uncastConfigs.Cast<Il2CppSystem.Collections.Generic.List<GameModeConfig>>();
+                        if (configs == null)
+                        {
+                            LogMessage($"ERROR: Failed to convert uncastConfigs (IList) to configs (List).");
+                            return;
+                        }
+
+                        LogMessage($"Available game mode configs: {configs.Count}");
+                        Il2CppSystem.Collections.Generic.List<GameModeConfig> availableModes = configs;
 
                         // <PackageReference Include="STBlade.Modding.TLD.Il2CppAssemblies.Windows" Version="2.51.0" />
-                        IList<GameModeConfig>? _testing = GameManager.GetExperienceModeManagerComponent()?.GetAvailableGameModes() as IList<GameModeConfig>;
-                        LogMessage($"_testng available game modes count: {_testing?.Count ?? 0}");
+                        // IList<GameModeConfig>? _testing = GameManager.GetExperienceModeManagerComponent()?.GetAvailableGameModes() as IList<GameModeConfig>;
+                        // LogMessage($"_testing available game modes count: {_testing?.Count ?? 0}");
 
                         LogMessage($"Available game modes count: {availableModes?.Count ?? 0}");
 
                         if (availableModes == null)
                         {
-                            LogMessage("Available game modes list is null.");
+                            LogMessage("WARNING: Available game modes list is null.");
                             return;
                         }
 
                         // Find the matching mode
-                        GameModeConfig currentModeConfig = null;
+                        GameModeConfig? currentModeConfig = null;
                         for (int i = 0; i < availableModes.Count; i++)
                         {
                             var mode = availableModes[i];
@@ -272,7 +284,7 @@ namespace PrepperCache
 
                         if (currentModeConfig == null)
                         {
-                            LogMessage("Current experience mode not found in available modes.");
+                            LogMessage("ERROR: Current experience mode not found in available modes.");
                             return;
                         }
 
@@ -286,7 +298,7 @@ namespace PrepperCache
 
                         if (currentSandbox == null)
                         {
-                            LogMessage("Failed to get SandboxConfig.");
+                            LogMessage("ERROR: Failed to get SandboxConfig.");
                             return;
                         }
 
@@ -294,7 +306,7 @@ namespace PrepperCache
 
                         if (bunkerSetup == null)
                         {
-                            LogMessage("Bunker setup is null.");
+                            LogMessage("ERROR: Bunker setup is null.");
                             return;
                         }
 
@@ -303,7 +315,7 @@ namespace PrepperCache
                         // Sometimes the gameTime is zero here.  Seen most often when entering a new scene (indoors).  Check for gameTime zero and skip logging if so.
                         if (gameTime == 0f)
                         {
-                            LogMessage($"; Detected gameTime of zero likely due to scene change timing.  No action taken.");
+                            LogMessage($"WARNING: Detected gameTime of zero likely due to scene change timing.  No action taken.");
                             return;     // When gameTime is zero, nothing to do here.
                         }
 
@@ -419,18 +431,12 @@ namespace PrepperCache
                             hudMessage += $"Stockpile (Kitchen)->{GetHumanFriendlyRegionName(replacements[0].m_LocationReference.SceneName)}\n" +
                                           $"Hunter->{GetHumanFriendlyRegionName(replacements[3].m_LocationReference.SceneName)}\n" +
                                           $"Conspiracy->{GetHumanFriendlyRegionName(replacements[6].m_LocationReference.SceneName)}";
-                            //mappingsRegion2PrepperCacheName[GetHumanFriendlyRegionName(replacements[0].m_LocationReference.SceneName)] = "Stockpile Bunker";
-                            //mappingsRegion2PrepperCacheName[GetHumanFriendlyRegionName(replacements[3].m_LocationReference.SceneName)] = "Hunter Bunker";
-                            //mappingsRegion2PrepperCacheName[GetHumanFriendlyRegionName(replacements[6].m_LocationReference.SceneName)] = "Conspiracy Bunker";
                         } else if (easyModes.Contains(currentModeConfig.name))
                         {
                             // Easy modes
                             hudMessage += $"Stockpile (Kitchen)->{GetHumanFriendlyRegionName(replacements[6].m_LocationReference.SceneName)}\n" +
                                           $"Hunter->{GetHumanFriendlyRegionName(replacements[7].m_LocationReference.SceneName)}\n" +
                                           $"Conspiracy->{GetHumanFriendlyRegionName(replacements[8].m_LocationReference.SceneName)}";
-                            //mappingsRegion2PrepperCacheName[GetHumanFriendlyRegionName(replacements[6].m_LocationReference.SceneName)] = "Stockpile Bunker";
-                            //mappingsRegion2PrepperCacheName[GetHumanFriendlyRegionName(replacements[7].m_LocationReference.SceneName)] = "Hunter Bunker";
-                            //mappingsRegion2PrepperCacheName[GetHumanFriendlyRegionName(replacements[8].m_LocationReference.SceneName)] = "Conspiracy Bunker";
                         }
                         else
                         {
@@ -438,7 +444,7 @@ namespace PrepperCache
                         }
 
                         LogMessage(hudMessage);
-                        // Iff the HUD dissplay is enabled and the display duration is greater than zero, show the HUD message.
+                        // If the HUD dissplay is enabled and the display duration is greater than zero, show the HUD message.
                         if (Settings.enablePrepperCacheHUDDisplay && Settings.hudDisplayDuration > 0)
                             HUDMessage.AddMessage(hudMessage, Settings.hudDisplayDuration, false, true);
                     }
@@ -532,7 +538,7 @@ namespace PrepperCache
                 }
                 else
                 {
-                    LogMessage($"Failed to load prepper cache dictionary.");
+                    LogMessage($"ERROR: Failed to load prepper cache dictionary.");
                     return; // If we fail to load the prepper cache dictionary, we can't proceed with modifying the region names, so we exit the Prefix.
                 }
 
@@ -556,7 +562,8 @@ namespace PrepperCache
                     }
                     else
                     {
-                        // Handle the case when the key is not found
+                        // Handle the case when the key is not found.  This will be regions that don't have a prepper cache present.
+                        // LogMessage($"INFORM: No prepper cache mapping found for region: {labelText}");
                         updatedLabelText = null; // or any default value you want to use
                     }
                 }   // for each region on the world map
@@ -583,20 +590,28 @@ namespace PrepperCache
 
                 ExperienceModeType? emt = ExperienceModeManager.GetCurrentExperienceModeType();
                 LogMessage($"Current experience mode type: {emt?.ToString() ?? "<null>"}");
-                if (!emt.HasValue) return false;
+                if (!emt.HasValue)
+                {
+                    LogMessage($"ERROR: No current experience mode type found.");
+                    return false;
+                }
 
                 //var experienceManager = GameManager.GetExperienceModeManagerComponent();
                 ExperienceModeManager experienceManager = GameManager.GetExperienceModeManagerComponent();
 
-                //IList<GameModeConfig> availableModes = (IList<GameModeConfig>)(experienceManager?.GetAvailableGameModes());
-                //Il2CppSystem.Collections.Generic.IList<GameModeConfig>? availableModes = (Il2CppSystem.Collections.Generic.IList<GameModeConfig>?)((experienceManager?.GetAvailableGameModes()) as IList<GameModeConfig>);
-                //System.Collections.Generic.IList<GameModeConfig>? availableModes = (System.Collections.Generic.IList<GameModeConfig>?)((experienceManager?.GetAvailableGameModes()) as IList<GameModeConfig>);
-                //IList<GameModeConfig>? availableModes = (IList<GameModeConfig>?)(experienceManager?.GetAvailableGameModes());
-                //Il2CppSystem.Collections.Generic.IList<GameModeConfig>? availableModes = experienceManager?.GetAvailableGameModes();
-                //IList<GameModeConfig>? availableModes = (IList<GameModeConfig>?)(experienceManager?.GetAvailableGameModes());
-                //IList<GameModeConfig>? availableModes = (IList<GameModeConfig>?)(experienceManager?.GetAvailableGameModes());
-                //ICollection<GameModeConfig> availableModes2 = (ICollection<GameModeConfig>)(experienceManager.GetAvailableGameModes());
-                IList<GameModeConfig>? availableModes = (experienceManager?.GetAvailableGameModes()) as IList<GameModeConfig>;
+                // Monsieurmeh's fix 
+                //Il2CppSystem.Collections.Generic.List<GameModeConfig>? configs = null;
+
+                Il2CppSystem.Collections.Generic.IList<GameModeConfig>? uncastConfigs = experienceManager?.GetAvailableGameModes();
+                if (uncastConfigs == null)
+                    return false;
+
+                Il2CppSystem.Collections.Generic.List<GameModeConfig>? configs = uncastConfigs.Cast<Il2CppSystem.Collections.Generic.List<GameModeConfig>>();
+                if (configs == null)
+                    return false;
+
+                LogMessage($"Available game mode configs: {configs.Count}");
+                Il2CppSystem.Collections.Generic.List<GameModeConfig> availableModes = configs;
 
                 if (availableModes == null)
                 {
@@ -606,15 +621,15 @@ namespace PrepperCache
 
                 // Find the matching mode
                 GameModeConfig? currentModeConfig = null;
-                //for (int i = 0; i < availableModes?.Count; i++)
-                //{
-                //    var mode = availableModes[i];
-                //    if (mode != null && mode.name == emt.Value.ToString())
-                //    {
-                //        currentModeConfig = mode;
-                //        break;
-                //    }
-                //}
+                for (int i = 0; i < availableModes?.Count; i++)
+                {
+                    var mode = availableModes[i];
+                    if (mode != null && mode.name == emt.Value.ToString())
+                    {
+                        currentModeConfig = mode;
+                        break;
+                    }
+                }
                 if (currentModeConfig == null)
                 {
                     LogMessage("Current experience mode not found in available modes.");
@@ -683,26 +698,5 @@ namespace PrepperCache
 
             return true;
         }   // Helper function to determine the Prepper Caches within the current game and populate the mappingsRegion2PrepperCacheName dictionary.
-
-        // Helper function to load the bunker scene names for the current game mode.
-        // This is used to determine if we're in a scene that contains a prepper cache, so that we can display the
-        // prepper cache information on the world map and other UI elements when we're in those scenes.
-        private static void CollectBunkerSceneNames(SandboxConfig sbc)
-        {
-            BunkerSceneNames.Clear();
-            Il2CppTLD.Gameplay.BunkerInteriorSpecification[] interiors = sbc.m_BunkerSetup.m_BunkerInteriors;
-            if (interiors == null) return;
-
-            foreach (Il2CppTLD.Gameplay.BunkerInteriorSpecification spec in interiors)
-            {
-                if (spec?.m_Interior == null) continue;
-                string sceneName = spec.m_Interior.name;
-                if (string.IsNullOrEmpty(sceneName)) continue;
-                BunkerSceneNames.Add(sceneName);
-                LogMessage($"Registered bunker scene: {sceneName}");
-            }
-        }
-
     }   // PrepperCacheMain
-
 }   // namespace
