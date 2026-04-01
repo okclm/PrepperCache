@@ -39,7 +39,7 @@ The mod includes configurable options that can be adjusted through a settings me
 <img width="1920" height="1080" alt="image" src="Options Screenshot.png" />
 
 - **Enable Prepper Cache data capture (Yes/No)** - Enable or disable the mod's data logging function.
-- **Capture Prepper Cache Key** - Configure the hotkey used to trigger the data capture. Default is Numeric Keypad 1.
+- **Capture Prepper Cache Key** - Configure the hotkey used to trigger the data capture. Default is Numeric Keypad 4.
 - **Enable HUD display messages (Yes/No)** - Enable or disable messages displayed on the HUD when data is captured.
 - **HUD Prepper Cache Inventory display duration (seconds)** - Configure how long the HUD messages are displayed when data is captured.
 - **Enable World Map Prepper Cache Inventory Display** - Enable or disable the display of prepper cache information on the world map.
