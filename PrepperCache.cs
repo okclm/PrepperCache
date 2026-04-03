@@ -501,6 +501,7 @@ namespace PrepperCache
             sceneName = string.IsNullOrEmpty(sceneName) ? UnityEngine.SceneManagement.SceneManager.GetActiveScene().name.ToLowerInvariant() : sceneName.ToLowerInvariant();
             if (
                 GameManager.BOOT.ToLowerInvariant() == sceneName
+                || GameManager.BOOT == sceneName
                 || GameManager.EMPTY.ToLowerInvariant() == sceneName
                 || GameManager.GetTargetMainMenuSceneName().ToLowerInvariant() == sceneName
                 || string.IsNullOrEmpty(sceneName)
