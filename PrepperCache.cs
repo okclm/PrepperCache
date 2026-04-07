@@ -14,7 +14,7 @@ using Il2CppVLB;
 using MelonLoader;
 using MelonLoader.Utils;
 using System.Collections;
-//using System.Diagnostics;
+using System.Diagnostics;
 //using System.Globalization;
 //using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -47,7 +47,7 @@ namespace PrepperCache
         // Are we in the game menu?
         public static bool inMenu = true;
 
-        public const string MOD_VERSION_NUMBER = "Version 1.2.0 - 03/31/2026";      // The version # of the mod.
+        public const string MOD_VERSION_NUMBER = "Version 1.2.0 - 04/04/2026";      // The version # of the mod.
         internal const string DEFAULT_FILE_NAME = "PrepperCache.log";               // The log file is written in the MODS folder for TLD  (i.e. D:\Program Files (x86)\Steam\steamapps\common\TheLongDark\Mods)
         //internal const string DEFAULT_FILE_NAME = "Telemetry.log";                // The log file is written in the MODS folder for TLD  (i.e. D:\Program Files (x86)\Steam\steamapps\common\TheLongDark\Mods)
 
@@ -175,16 +175,16 @@ namespace PrepperCache
             // Debug break: in DEBUG builds this will prompt to attach a debugger (Launch) then break.
             // Replace or remove the #if block if you want this in release.
 
-            //#if DEBUG
-            //            if (!Debugger.IsAttached)
-            //            {
-            //                Debugger.Launch(); // prompts to attach a debugger
-            //            }
-            //            else
-            //            {
-            //                Debugger.Break(); // break into already attached debugger
-            //            }
-            //#endif
+#if DEBUG
+                        if (!Debugger.IsAttached)
+                        {
+                            Debugger.Launch(); // prompts to attach a debugger
+                        }
+                        else
+                        {
+                            Debugger.Break(); // break into already attached debugger
+                        }
+#endif
 
             LogMessage("Initializing Melon, starting PrepperCache Mod: " + MOD_VERSION_NUMBER);
 
@@ -497,14 +497,11 @@ namespace PrepperCache
         // Helper method to determine if the current scene is a game scene versus a menu or empty or boot scene.
         public static bool IsGameScene(string? sceneName = null)
         {
-            //sceneName = string.IsNullOrEmpty(sceneName) ? Name().ToLowerInvariant() : sceneName.ToLowerInvariant();
             sceneName = string.IsNullOrEmpty(sceneName) ? UnityEngine.SceneManagement.SceneManager.GetActiveScene().name.ToLowerInvariant() : sceneName.ToLowerInvariant();
             if (
-                GameManager.BOOT.ToLowerInvariant() == sceneName
-                || GameManager.BOOT == sceneName
+                string.IsNullOrEmpty(sceneName)
                 || GameManager.EMPTY.ToLowerInvariant() == sceneName
                 || GameManager.GetTargetMainMenuSceneName().ToLowerInvariant() == sceneName
-                || string.IsNullOrEmpty(sceneName)
                 )
             {
                 return false;
